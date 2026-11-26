@@ -171,11 +171,11 @@ NUMBERS = [
 
 # The day in UTC - clock times verified from the reports.
 MOMENTS = [
-    ("00:00", "Thanksgiving in the US"),
+    ("00:00", "Thanksgiving, US"),
     ("05:00", "Constitution Day, India"),
     ("09:00", "EU summit, Brussels"),
     ("12:11", "Progress 97 docks"),
-    ("14:00", "Chess Game 3, Geneva"),
+    ("14:00", "Game 3, Geneva"),
 ]
 
 DATE_CHECK = [
@@ -403,11 +403,11 @@ def draw_moments(d):
     x = MARGIN + 122
     for when, what in MOMENTS:
         label = f"{when}  {what}"
-        if x + d.textlength(label, font=plain(11)) > W - MARGIN:
+        if x + d.textlength(label, font=plain(10)) > W - MARGIN:
             break
-        d.text((x, y0 + 10), label, font=plain(11), fill=INK)
-        x += d.textlength(label, font=plain(11)) + 22
-        d.text((x - 16, y0 + 10), "·", font=bold(11), fill=GREY)
+        d.text((x, y0 + 10), label, font=plain(10), fill=INK)
+        x += d.textlength(label, font=plain(10)) + 20
+        d.text((x - 14, y0 + 10), "·", font=bold(10), fill=GREY)
 
 def draw_numbers(d):
     y0, y1 = 162, 206
