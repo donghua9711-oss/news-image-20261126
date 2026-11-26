@@ -446,6 +446,26 @@ def scene_chess(d, box):
 
 SCENES = {"parade": scene_parade, "mumbai": scene_mumbai, "chess": scene_chess}
 
+# Rich generated editorial illustrations (assets2/), drawn in the same
+# ink-and-watercolour manner as the scenes above and pasted into the page.
+LEAD_ART = {"parade": "lead-parade.jpg", "mumbai": "lead-mumbai.jpg",
+            "chess": "lead-chess.jpg"}
+ROW_ART = {"eu": "row-eu.jpg", "missile": "row-missile.jpg",
+           "kyiv": "row-kyiv.jpg", "chart": "row-chart.jpg",
+           "port": "row-port.jpg", "fire": "row-fire.jpg",
+           "factory": "row-factory.jpg", "skyline": "row-skyline.jpg",
+           "pact": "row-pact.jpg", "gdp": "row-gdp.jpg"}
+
+def paste_cover(img, path, box):
+    x0, y0, x1, y1 = box
+    tw, th = x1 - x0, y1 - y0
+    art = Image.open(path).convert("RGB")
+    scale = max(tw / art.width, th / art.height)
+    art = art.resize((round(art.width * scale), round(art.height * scale)))
+    left = (art.width - tw) // 2
+    top = (art.height - th) // 2
+    img.paste(art.crop((left, top, left + tw, top + th)), (x0, y0))
+
 # --- drawn row scenes (small, one per row story) -------------------------------
 def mini_eu(d, box):
     x0, y0, x1, y1 = box
@@ -641,7 +661,23 @@ def draw_numbers(d):
         d.text((x, y0 + 35), fit(d, what, plain(8), cw - 8), font=plain(8),
                fill=(206, 198, 178))
 
-def draw_leads(d):
+def lead_overlays(d, scene, box):
+    x0, y0, x1, y1 = box
+    if scene == "parade":
+        d.rectangle([x0, y1 - 22, x1, y1], fill=RED)
+        d.text(((x0 + x1) / 2, y1 - 16), "POSTPONED TO SATURDAY", font=bold(10),
+               fill=(255, 246, 235), anchor="ma")
+    elif scene == "mumbai":
+        d.ellipse([x1 - 64, y0 + 8, x1 - 8, y0 + 64], fill=(216, 176, 80),
+                  outline=(255, 246, 220), width=2)
+        d.text((x1 - 36, y0 + 20), "18", font=serif(21), fill=(40, 30, 8), anchor="ma")
+        d.text((x1 - 36, y0 + 44), "YEARS", font=bold(8), fill=(40, 30, 8), anchor="ma")
+    elif scene == "chess":
+        d.rectangle([x1 - 118, y1 - 34, x1 - 8, y1 - 8], fill=(250, 246, 235),
+                    outline=RULE, width=1)
+        d.text((x1 - 63, y1 - 28), "GAME 3 · 1 - 1", font=bold(11), fill=INK, anchor="ma")
+
+def draw_leads(img, d):
     y0, y1 = 214, 486
     gap = 8
     cw = (W - 2 * MARGIN - 2 * gap) // 3
@@ -649,7 +685,10 @@ def draw_leads(d):
         x0 = MARGIN + i * (cw + gap)
         x1 = x0 + cw
         d.rectangle([x0, y0, x1, y1], fill=CARD, outline=RULE, width=1)
-        SCENES[scene](d, (x0 + 1, y0 + 1, x1 - 1, y0 + 138))
+        box = (x0 + 1, y0 + 1, x1 - 1, y0 + 138)
+        paste_cover(img, os.path.join(HERE, "assets2", LEAD_ART[scene]), box)
+        d = ImageDraw.Draw(img)
+        lead_overlays(d, scene, box)
         d.rectangle([x0 + 10, y0 + 146, x0 + 10 + d.textlength(region, font=bold(10)) + 12, y0 + 164],
                     fill=REGION_COLORS[region])
         d.text((x0 + 16, y0 + 150), region, font=bold(10), fill=(255, 255, 255))
@@ -665,10 +704,12 @@ def draw_leads(d):
             ty += 13
         d.text((x0 + 10, y1 - 17), f"No. {i + 1} · Source: {source}", font=plain(9), fill=GREY)
 
-def draw_story_card(d, x0, y, cw, n, row):
+def draw_story_card(img, d, x0, y, cw, n, row):
     region, head, city, summary, source, status, scene = row
     d.rectangle([x0, y, x0 + cw, y + 45], fill=CARD, outline=RULE, width=1)
-    ROW_SCENES[scene](d, (x0 + 1, y + 1, x0 + 46, y + 44))
+    paste_cover(img, os.path.join(HERE, "assets2", ROW_ART[scene]),
+                (x0 + 1, y + 1, x0 + 46, y + 44))
+    d = ImageDraw.Draw(img)
     d.rectangle([x0, y, x0 + 17, y + 15], fill=REGION_COLORS[region])
     d.text((x0 + 8.5, y + 2), str(n), font=bold(10), fill=(255, 255, 255), anchor="ma")
     tx = x0 + 52
@@ -710,14 +751,15 @@ def draw_map(d, x0, y0, x1, y1):
     d.text((x0 + 12, ly), "Numbered pins: the 13 drawn stories.", font=plain(10), fill=GREY)
     d.text((x0 + 12, ly + 15), "The 23 briefs below span the same map.", font=plain(10), fill=GREY)
 
-def draw_story_grid(d):
+def draw_story_grid(img, d):
     y0 = 494
     col_w = (W - 2 * MARGIN - 2 * 8) // 3
     xs = [MARGIN, MARGIN + col_w + 8, MARGIN + 2 * (col_w + 8)]
     for stack in range(2):
         for j in range(5):
             idx = stack * 5 + j
-            draw_story_card(d, xs[stack], y0 + j * 48, col_w, idx + 4, ROWS[idx])
+            draw_story_card(img, d, xs[stack], y0 + j * 48, col_w, idx + 4, ROWS[idx])
+            d = ImageDraw.Draw(img)
     draw_map(d, xs[2], y0, xs[2] + col_w, y0 + 237)
 
 def draw_briefs(d):
@@ -762,8 +804,10 @@ def main():
     draw_region_band(d)
     draw_moments(d)
     draw_numbers(d)
-    draw_leads(d)
-    draw_story_grid(d)
+    draw_leads(img, d)
+    d = ImageDraw.Draw(img)
+    draw_story_grid(img, d)
+    d = ImageDraw.Draw(img)
     draw_briefs(d)
     draw_footer(d)
     out = os.path.join(HERE, "entry.png")
